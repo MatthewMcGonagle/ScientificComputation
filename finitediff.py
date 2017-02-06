@@ -3,18 +3,19 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 
-N = 50 # Mesh size, should be greater than 2
+Nx = 50 # Mesh x size, should be greater than 2
+Ny = 25 # Mesh y size, should be greater than 2
 xa = -0.5 # x lower bound
 xb = 0.5 # x upper bound
 ya = -0.5 # y lower bound
 yb = 0.5 # y upper bound
-meshdeltax = (xb - xa) / (N-1)
-meshdeltay = (yb - ya) / (N-1)
+meshdeltax = (xb - xa) / (Nx-1)
+meshdeltay = (yb - ya) / (Ny-1)
 
 # Make mesh for x, y coordinates
 
-x0 = np.arange(N)
-y0 = np.arange(N)
+x0 = np.arange(Nx)
+y0 = np.arange(Ny)
 ymesh, xmesh = np.meshgrid(x0, y0)
 
 # Function g(x,y) for boundary values
@@ -33,10 +34,11 @@ def ycoord(yi):
 	return yb - meshdeltay * yi 
 
 # Initialize Mesh for u(x,y). Set the boundary conditions.
-umesh = [ [0 for cols in range(N)] for rows in range(N)]
-for i in range(N):
+umesh = [ [0 for cols in range(Ny)] for rows in range(Nx)]
+for i in range(Ny):
 	umesh[i][0] = g(xcoord(i), ya)
 	umesh[i][N-1] = g(xcoord(i), yb)
+for i in range(Nx):
 	umesh[0][i] = g(xa, ycoord(i))
 	umesh[N-1][i] = g(xb, ycoord(i))
 
