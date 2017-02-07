@@ -4,25 +4,36 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 print( "Initializing Set Up" )
-varbounds = np.array( [ [0., 2.]
-                      , [0., 2.5] ] )
-nvarpoints = np.array([30, 20], dtype = int)
+varbounds = np.array( [ [-0.5, 0.5]
+                      , [-0.5, 0.5] ] )
+nvarpoints = np.array([10, 30], dtype = int)
 varpointsexcess = [ np.linspace(varbounds[i][0], varbounds[i][1], nvarpoints[i]+2) 
                         for i in range(len(nvarpoints))
                   ] 
 varpoints = [varpointsexcess[i][1:-1:1] for i in range(len(varpointsexcess))]
 dvar = [varpointsexcess[i][1] - varpointsexcess[i][0] for i in range(len(varpointsexcess))]
 
+print(dvar)
 
 # Boundary values function
 
 def f(x,y):
-        return y**2 
+	return (x**2 - y**2)*(-np.log(x**2+y**2))**0.5
+        # return x**3 + y**3 
 
 # Source function 
 
+def g0(x,y):
+	return -np.log(x**2 + y**2)
+def g1(x,y):
+	return 2*x*g0(x,y)**-0.5 * -1 / (x**2+y**2) * 2*x 
+def g2(x,y):
+	# dx = (-np.log(x**2 + y**2)**-0.5 * -x / (x**2 + y**2)
+	temp = g0(x,y)**-1.5 * x**2 / (x**2 + y**2)**2 - g0(x,y)**-0.5 / (x**2 + y**2) + g0(x,y)**-0.5 * 2*x**2 / (x**2 + y**2)**2 
+	return (x**2 - y**2) * temp
 def g(x,y):
-	return 2.0 
+	return g1(x,y) - g1(y,x) + g2(x,y) + g2(y,x) 
+	# return 6*x + 6*y 
 
 print( "Initializing Data Arrays" )
 
@@ -40,7 +51,7 @@ for i in range(nvarpoints[0]):
                         varcoeff[i][j][j+1] = diffcoeffsize[1] 
                 varcoeff[i][j][j] = 1.0 
 
-topbottom = [ [ g(varpoints[0][j], varbounds[1][i])
+topbottom = [ [ f(varpoints[0][j], varbounds[1][i])
 	for j in range(nvarpoints[0]) ]
 	for i in range(2) ]
 
@@ -54,12 +65,12 @@ rhsterms = [ [g(varpoints[0][i], varpoints[1][j]) * scaling
 rhsterms = np.array( rhsterms)
 
 for i in range(nvarpoints[0]) :
-        rhsterms[i][0] -= topbottom[0][i] * scaling 
-        rhsterms[i][-1] -= topbottom[1][i] * scaling
+        rhsterms[i][0] -= topbottom[0][i] * diffcoeffsize[1] 
+        rhsterms[i][-1] -= topbottom[1][i] * diffcoeffsize[1] 
 
 for i in range(nvarpoints[1]):
-        rhsterms[0][i] -= leftright[0][i] * scaling
-        rhsterms[-1][i] -= leftright[1][i] * scaling
+        rhsterms[0][i] -= leftright[0][i] * diffcoeffsize[0] 
+        rhsterms[-1][i] -= leftright[1][i] * diffcoeffsize[0] 
 
 # Reduce
 # After completion, varpoints[xi][j][k] = coefficient for ( xi + 1, k ) when k <= j
@@ -135,4 +146,14 @@ fig = plt.figure()
 ax = fig.gca(projection = '3d')
 surf = ax.plot_wireframe(X, Y, rhsterms)
 
+truefunc = [[ f(varpoints[0][i], varpoints[1][j])
+	for j in range(nvarpoints[1])]
+	for i in range(nvarpoints[0])]
+truefunc = np.array(truefunc)
+
+surf2 = ax.plot_wireframe(X, Y, truefunc, color='red')
 plt.show()
+
+error = rhsterms - truefunc
+print(np.amax(error))
+print(np.amin(error))
