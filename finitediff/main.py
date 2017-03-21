@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 print( "Initializing Set Up" )
-varbounds = np.array( [ [-0.5, 0.5]
-                      , [-0.5, 0.5] ] )
-nvarpoints = np.array([10, 30], dtype = int)
+varbounds = np.array( [ [-0.3, 0.3]
+                      , [-0.3, 0.3] ] )
+nvarpoints = np.array([50, 50], dtype = int)
 varpointsexcess = [ np.linspace(varbounds[i][0], varbounds[i][1], nvarpoints[i]+2) 
                         for i in range(len(nvarpoints))
                   ] 
@@ -20,6 +20,7 @@ print(dvar)
 def f(x,y):
 	return (x**2 - y**2)*(-np.log(x**2+y**2))**0.5
         # return x**3 + y**3 
+	# return np.sin(15*(x+y))
 
 # Source function 
 
@@ -34,6 +35,7 @@ def g2(x,y):
 def g(x,y):
 	return g1(x,y) - g1(y,x) + g2(x,y) + g2(y,x) 
 	# return 6*x + 6*y 
+	# return -2*15**2*np.sin(15*(x+y))
 
 print( "Initializing Data Arrays" )
 
@@ -54,23 +56,27 @@ for i in range(nvarpoints[0]):
 topbottom = [ [ f(varpoints[0][j], varbounds[1][i])
 	for j in range(nvarpoints[0]) ]
 	for i in range(2) ]
+topbottom = np.array(topbottom)
 
 leftright = [ [ f(varbounds[0][i], varpoints[1][j])
 	for j in range(nvarpoints[1])]
 	for i in range(2) ]
+leftright = np.array(leftright)
 
 rhsterms = [ [g(varpoints[0][i], varpoints[1][j]) * scaling
 	for j in range(nvarpoints[1])]
 	for i in range(nvarpoints[0])]
 rhsterms = np.array( rhsterms)
 
-for i in range(nvarpoints[0]) :
-        rhsterms[i][0] -= topbottom[0][i] * diffcoeffsize[1] 
-        rhsterms[i][-1] -= topbottom[1][i] * diffcoeffsize[1] 
+# epsilon = 0.05
+# rhsterms += epsilon * (1.0 - 2.0 * np.random.rand(*nvarpoints))
 
-for i in range(nvarpoints[1]):
-        rhsterms[0][i] -= leftright[0][i] * diffcoeffsize[0] 
-        rhsterms[-1][i] -= leftright[1][i] * diffcoeffsize[0] 
+# Initialize rhs terms
+rhsterms[:, 0] -= diffcoeffsize[1] * topbottom[0, :]
+rhsterms[:, -1] -= diffcoeffsize[1] * topbottom[1, :]
+
+rhsterms[0, :] -= diffcoeffsize[0] * leftright[0, :]
+rhsterms[-1, :] -= diffcoeffsize[0] * leftright[1, :]
 
 # Reduce
 # After completion, varpoints[xi][j][k] = coefficient for ( xi + 1, k ) when k <= j
@@ -95,8 +101,8 @@ def reduceupycoord(xi):
 		scaling = 1.0 / varcoeff[xi][thiseqy][thiseqy]
 		rightcoeff = scaling * diffcoeffsize[0]
 
-		for yk in range(nvarpoints[1]):
-			varcoeff[xi][thiseqy][yk] *= scaling
+		varcoeff[xi][thiseqy][:] *= scaling
+
 		rhsterms[xi][thiseqy] *= scaling
 
 		# Store the coeff of ( xi + 1, thiseqy ) at varcoeff[xi][thiseqy][thiseqy]
@@ -105,15 +111,13 @@ def reduceupycoord(xi):
 		# Reduce for 0 to thiseqy - 1
 		for toreduce in range(0, thiseqy):
 			scaling = -varcoeff[xi][toreduce][thiseqy]
-			for yl in range(nvarpoints[1]):
-				varcoeff[xi][toreduce][yl] += scaling * varcoeff[xi][thiseqy][yl]
+			varcoeff[xi][toreduce][:] += scaling * varcoeff[xi][thiseqy][:]
 			varcoeff[xi][toreduce][thiseqy] = scaling * varcoeff[xi][thiseqy][thiseqy]
 			rhsterms[xi][toreduce] += scaling * rhsterms[xi][thiseqy]
 
 		for toreduce in range(thiseqy + 1, nvarpoints[1]):
 			scaling = -varcoeff[xi][toreduce][thiseqy]	
-			for yl in range(nvarpoints[1]):
-				varcoeff[xi][toreduce][yl] += scaling * varcoeff[xi][thiseqy][yl]
+			varcoeff[xi][toreduce][:] += scaling * varcoeff[xi][thiseqy][:]
 			varcoeff[xi][toreduce][thiseqy] = scaling * varcoeff[xi][thiseqy][thiseqy]
 			rhsterms[xi][toreduce] += scaling * rhsterms[xi][thiseqy]
 
