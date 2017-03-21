@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 print( "Initializing Set Up" )
 varbounds = np.array( [ [-0.3, 0.3]
                       , [-0.3, 0.3] ] )
-nvarpoints = np.array([50, 50], dtype = int)
+nvarpoints = np.array([70, 70], dtype = int)
 varpointsexcess = [ np.linspace(varbounds[i][0], varbounds[i][1], nvarpoints[i]+2) 
                         for i in range(len(nvarpoints))
                   ] 
@@ -124,13 +124,12 @@ def reduceupycoord(xi):
 def reducenextcol(xi):
 	for thiseqy in range(nvarpoints[1]):
 		scaling = -diffcoeffsize[0]
-		for yk in range(nvarpoints[1]):
-			varcoeff[xi+1][thiseqy][yk] += scaling * varcoeff[xi][thiseqy][yk]
+		varcoeff[xi+1][thiseqy][:] += scaling * varcoeff[xi][thiseqy][:]
 		rhsterms[xi+1][thiseqy] += scaling * rhsterms[xi][thiseqy]
+
 def backsolve(xi):
 	for thiseqy in range(nvarpoints[1]):
-		for yk in range(nvarpoints[1]):
-			rhsterms[xi][thiseqy] -= varcoeff[xi][thiseqy][yk] * rhsterms[xi+1][yk]
+		rhsterms[xi][thiseqy] -= np.dot( varcoeff[xi][thiseqy][:], rhsterms[xi+1][:] )
 
 for xi in range(nvarpoints[0]-1):
 	reduceupycoord(xi)
